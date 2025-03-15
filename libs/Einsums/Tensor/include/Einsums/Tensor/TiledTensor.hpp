@@ -144,22 +144,22 @@ struct TiledTensor : public TiledTensorNoExtra, design_pats::Lockable<std::recur
      * @param name The name of the tensor.
      * @param sizes The grids to apply.
      */
-    template <typename... Sizes>
-        requires(!std::is_same_v<std::array<std::vector<int>, Rank>, Sizes> && ... && true)
+    template <typename... Sizes, std::integral IntType>
+        requires(!std::is_same_v<std::array<std::vector<IntType>, Rank>, Sizes> && ... && true)
     TiledTensor(std::string name, Sizes... sizes) : _name(name), _tile_offsets(), _tile_sizes(), _tiles(), _size(0), _dims{} {
         static_assert(sizeof...(Sizes) == Rank || sizeof...(Sizes) == 1);
 
         _size = 1;
         if constexpr (sizeof...(Sizes) == Rank &&
-                      !std::is_same_v<std::array<std::vector<int>, Rank>, decltype(std::get<0>(std::tuple(sizes...)))>) {
-            _tile_sizes = std::array<std::vector<int>, Rank>{std::vector<int>(sizes.begin(), sizes.end())...};
+                      !std::is_same_v<std::array<std::vector<IntType>, Rank>, decltype(std::get<0>(std::tuple(sizes...)))>) {
+            _tile_sizes = std::array<std::vector<IntType>, Rank>{std::vector<IntType>(sizes.begin(), sizes.end())...};
         } else {
             for (int i = 0; i < Rank; i++) {
-                _tile_sizes[i] = std::vector<int>(sizes.begin()..., sizes.end()...);
+                _tile_sizes[i] = std::vector<IntType>(sizes.begin()..., sizes.end()...);
             }
         }
         for (int i = 0; i < Rank; i++) {
-            _tile_offsets[i] = std::vector<int>();
+            _tile_offsets[i] = std::vector<IntType>();
             _tile_offsets[i].reserve(_tile_sizes[i].size());
 
             int sum = 0;
@@ -184,7 +184,8 @@ struct TiledTensor : public TiledTensorNoExtra, design_pats::Lockable<std::recur
      * @param name The name of the tensor.
      * @param sizes The grids to apply.
      */
-    TiledTensor(std::string name, std::array<std::vector<int>, Rank> const &sizes)
+    template <std::integral IntType>
+    TiledTensor(std::string name, std::array<std::vector<IntType>, Rank> const &sizes)
         : _name(name), _tile_offsets(), _tile_sizes(sizes), _tiles(), _size(0), _dims{} {
         _size = 1;
         for (int i = 0; i < Rank; i++) {
@@ -1127,7 +1128,8 @@ struct TiledTensor final : public tensor_base::TiledTensor<T, Rank, einsums::Ten
      * @param name The name for the tensor.
      * @param init The grid for the tensor.
      */
-    TiledTensor(std::string name, std::initializer_list<int> init) : tensor_base::TiledTensor<T, Rank, Tensor<T, Rank>>(name, init) {}
+    template <std::integral IntType>
+    TiledTensor(std::string name, std::initializer_list<IntType> init) : tensor_base::TiledTensor<T, Rank, Tensor<T, Rank>>(name, init) {}
 
     /**
      * @brief Copy constructor.
